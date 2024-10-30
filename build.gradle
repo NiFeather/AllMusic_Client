@@ -4,7 +4,7 @@ plugins {
 }
 
 def getVersionFromFile() {
-    def versionFile = file('../version')
+    def versionFile = file('./version')
     if (versionFile.exists()) {
         return versionFile.text.trim()
     } else {
