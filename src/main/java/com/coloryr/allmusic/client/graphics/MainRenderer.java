@@ -10,18 +10,56 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.*;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
-import org.joml.Vector3f;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class MainRenderer
 {
     private static final Logger log = LoggerFactory.getLogger(MainRenderer.class);
+
+    private final ScheduledExecutorService executor;
+
+    public MainRenderer()
+    {
+        this.executor = Executors.newSingleThreadScheduledExecutor();
+        executor.scheduleAtFixedRate(this::timer, 0, 1, TimeUnit.MILLISECONDS);
+    }
+
+    //region Timer
+
+    private int count;
+
+    // 渲染图片时的旋转角度
+    private int renderAngle = 0;
+
+    private void timer()
+    {
+        if (musicMetadata == null)
+        {
+            renderAngle = 0;
+            return;
+        }
+
+        if (count < musicMetadata.picRotateSpeed)
+        {
+            count++;
+            return;
+        }
+
+        count = 0;
+        renderAngle++;
+        renderAngle = renderAngle % 360;
+    }
+
+    //endregion Timer
 
     public void onRender(DrawContext context)
     {
@@ -32,7 +70,6 @@ public class MainRenderer
 
     public void setMusicMetadata(MusicMeta musicMetadata)
     {
-        log.info("Set! " + musicMetadata);
         this.musicMetadata = musicMetadata;
     }
 
@@ -62,9 +99,6 @@ public class MainRenderer
     {
         return currentTexture;
     }
-
-    // 渲染图片时的旋转角度
-    private int renderAngle = 0;
 
     public void doRender(DrawContext context)
     {
@@ -117,10 +151,6 @@ public class MainRenderer
         //if (musicMeta.pic.enable && haveImg)
         if (musicMeta.pic.enable)
         {
-            renderAngle = musicMeta.pic.shadow
-                    ? (int)((System.currentTimeMillis() / 10 * musicMeta.picRotateSpeed) % 360)
-                    : 0;
-
             // pic.shadow 是是否旋转； pic.color 是封面大小
             var identifier = musicMeta.pic.shadow ? textureRounded : currentTexture;
             drawPicture(context, identifier , musicMeta.pic.color, musicMeta.pic.x, musicMeta.pic.y, musicMeta.pic.dir, renderAngle);
