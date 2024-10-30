@@ -233,7 +233,6 @@ public class MainRenderer
         matrices.push();
 
         float scaleFactor = size / (float)image.getHeight();
-        MinecraftClient.getInstance().player.sendMessage(Text.literal("%s / %s --> %s".formatted(size, image.getHeight(), scaleFactor)), true);
         matrices.scale(scaleFactor, scaleFactor, scaleFactor);
 
         drawPictureLegacy(texture.getGlId(), size, x1, y1, ang);
