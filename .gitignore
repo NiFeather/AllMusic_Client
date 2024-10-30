@@ -26,11 +26,6 @@ forge*changelog.txt
 
 workspace.xml
 
-**/allmusic/client/player/
-**/allmusic/client/player/decoder/mp3/
-**/allmusic/client/hud/
-**/allmusic/client/player/decoder/
-
 # gradle
 
 .gradle/
@@ -71,3 +66,5 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+
+!**/allmusic/bin
