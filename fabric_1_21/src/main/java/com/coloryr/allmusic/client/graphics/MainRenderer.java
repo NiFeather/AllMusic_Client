@@ -36,6 +36,11 @@ public class MainRenderer
         this.musicMetadata = musicMetadata;
     }
 
+    public MusicMeta getMusicMetadata()
+    {
+        return musicMetadata;
+    }
+
     public String infoDisplay = "";
     public String listDisplay = "";
     public String lyricDisplay = "";
@@ -43,9 +48,13 @@ public class MainRenderer
     @Nullable
     private Identifier currentTexture;
 
-    public void setCurrentTexture(Identifier newTexture)
+    @Nullable
+    private Identifier textureRounded;
+
+    public void setCurrentTexture(Identifier newTexture, Identifier newTextureRounded)
     {
         this.currentTexture = newTexture;
+        this.textureRounded = newTextureRounded;
     }
 
     @Nullable
@@ -61,9 +70,6 @@ public class MainRenderer
     {
         MusicMeta musicMeta = this.musicMetadata;
         if (musicMeta == null) return;
-
-        // todo: Pic Rotate!
-        //renderAngle = (int)((System.currentTimeMillis() / 5) % 360);
 
         if (musicMeta.info.enable && !infoDisplay.isEmpty())
         {
@@ -111,7 +117,13 @@ public class MainRenderer
         //if (musicMeta.pic.enable && haveImg)
         if (musicMeta.pic.enable)
         {
-            drawPicture(context, currentTexture , musicMeta.pic.color, musicMeta.pic.x, musicMeta.pic.y, musicMeta.pic.dir, renderAngle);
+            renderAngle = musicMeta.pic.shadow
+                    ? (int)((System.currentTimeMillis() / 10 * musicMeta.picRotateSpeed) % 360)
+                    : 0;
+
+            // pic.shadow 是是否旋转； pic.color 是封面大小
+            var identifier = musicMeta.pic.shadow ? textureRounded : currentTexture;
+            drawPicture(context, identifier , musicMeta.pic.color, musicMeta.pic.x, musicMeta.pic.y, musicMeta.pic.dir, renderAngle);
         }
     }
 
@@ -168,7 +180,6 @@ public class MainRenderer
         context.drawText(MinecraftClient.getInstance().textRenderer, text, x1, y1, color, shadow);
     }
 
-
     private void drawPicture(DrawContext context, Identifier textureID, int size, int x, int y, HudAnchor dir, int ang)
     {
         if (dir == null)
@@ -217,30 +228,30 @@ public class MainRenderer
 
         var image = nativeImageBackedTexture.getImage();
 
-        var renderSize = AllMusic.instance().configurations.currentConfig.picSize;
-
         var matrices = context.getMatrices();
 
         matrices.push();
 
-        // todo: Implement rotation here!
-
-        float scaleFactor = renderSize / (float)image.getHeight();
+        float scaleFactor = size / (float)image.getHeight();
+        MinecraftClient.getInstance().player.sendMessage(Text.literal("%s / %s --> %s".formatted(size, image.getHeight(), scaleFactor)), true);
         matrices.scale(scaleFactor, scaleFactor, scaleFactor);
 
-        //MinecraftClient.getInstance().player.sendMessage(Text.literal("%s / %s --> %s".formatted(renderHeight, image.getHeight(), scaleFactor)), true);
+        drawPictureLegacy(texture.getGlId(), size, x1, y1, ang);
 
+/*
         context.drawTexture(RenderLayer::getGuiTextured, textureID,
                 x1, y1,
                 0f, 0f,
                 image.getWidth(), image.getHeight(),
                 image.getWidth(), image.getHeight());
-
+*/
         //drawPictureLegacy(texture.getGlId(), renderSize, x1, y1, ang);
 
         matrices.pop();
     }
 
+    // 叫他Legacy是因为我想实现一个不需要这样的，尽可能简单直白的东西
+    // 最主要是看不懂（划掉）看不顺眼这一堆奇怪的调用（
     private void drawPictureLegacy(int textureID, int size, int x, int y, int ang)
     {
         RenderSystem.setShader(ShaderProgramKeys.POSITION_TEX);

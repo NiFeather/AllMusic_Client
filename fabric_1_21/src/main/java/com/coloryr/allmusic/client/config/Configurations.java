@@ -38,7 +38,7 @@ public class Configurations
         if (currentConfig == null)
         {
             currentConfig = new HudConfiguration();
-            currentConfig.picSize = 50;
+            currentConfig.picSize = 70;
             currentConfig.queueSize = 100;
             currentConfig.exitSize = 50;
 

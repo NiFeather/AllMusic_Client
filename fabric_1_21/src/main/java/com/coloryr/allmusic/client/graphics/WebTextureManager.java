@@ -1,12 +1,12 @@
 package com.coloryr.allmusic.client.graphics;
 
 import com.coloryr.allmusic.client.AllMusic;
+import com.coloryr.allmusic.client.utils.Utils;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.AbstractTexture;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.client.texture.TextureManager;
 import net.minecraft.util.Identifier;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -54,15 +53,6 @@ public class WebTextureManager
 
     private final Map<Identifier, CompletableFuture<Boolean>> onGoingRequests = new ConcurrentHashMap<>();
 
-    public static BufferedImage resizeImage(BufferedImage originalImage, int targetWidth, int targetHeight)
-    {
-        Image resultingImage = originalImage.getScaledInstance(targetWidth, targetHeight, Image.SCALE_AREA_AVERAGING);
-        BufferedImage outputImage = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_RGB);
-        outputImage.getGraphics()
-                .drawImage(resultingImage, 0, 0, null);
-        return outputImage;
-    }
-
     /**
      * @return Whether success
      */
@@ -82,19 +72,14 @@ public class WebTextureManager
                 HttpEntity entity = response.getEntity();
                 var contentStream = entity.getContent();
 
-                var picSize = AllMusic.instance().configurations.currentConfig.picSize;
-
-                // JPEG Stream
+                // Possibly JPEG Stream
                 var byteArrayStream = new ByteArrayInputStream(contentStream.readAllBytes());
                 BufferedImage bufferedImage = ImageIO.read(byteArrayStream);
 
-                // Convert to PNG
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                ImageIO.write(bufferedImage, "png", outputStream);
+                registerImage(targetIdentifier, bufferedImage);
 
-                var image = NativeImage.read(new ByteArrayInputStream(outputStream.toByteArray()));
-                var texture = new NativeImageBackedTexture(image);
-                MinecraftClient.getInstance().getTextureManager().registerTexture(targetIdentifier, texture);
+                bufferedImage = Utils.makePictureRounded(bufferedImage.getWidth(), bufferedImage.getHeight(), bufferedImage);
+                registerImage(targetIdentifier.withSuffixedPath("_rounded"), bufferedImage);
 
                 this.loadedTextures.add(targetIdentifier);
             }
@@ -115,5 +100,27 @@ public class WebTextureManager
         onGoingRequests.put(targetIdentifier, future);
 
         return future;
+    }
+
+    private void registerImage(Identifier targetIdentifier, BufferedImage bufferedImage)
+    {
+        NativeImage image;
+
+        try
+        {
+            // Convert to PNG
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            ImageIO.write(bufferedImage, "png", outputStream);
+
+            image = NativeImage.read(new ByteArrayInputStream(outputStream.toByteArray()));
+        }
+        catch (Throwable t)
+        {
+            log.error("未能注册材质：" + t.getMessage());
+            return;
+        }
+
+        var texture = new NativeImageBackedTexture(image);
+        MinecraftClient.getInstance().getTextureManager().registerTexture(targetIdentifier, texture);
     }
 }
