@@ -3,20 +3,14 @@ package com.coloryr.allmusic.client.graphics;
 import com.coloryr.allmusic.client.AllMusic;
 import com.coloryr.allmusic.client.hud.HudAnchor;
 import com.coloryr.allmusic.client.hud.MusicMeta;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.ShaderProgramKeys;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.*;
 import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.TextColor;
-import net.minecraft.util.ColorCode;
-import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -227,7 +221,7 @@ public class MainRenderer
 
     private final int placeholderColor = ColorHelper.withAlpha(128, TextColor.parse("#333333").getOrThrow().getRgb());
 
-    private void drawPicture(DrawContext context, Identifier textureID, int size, int x, int y, HudAnchor dir, int ang)
+    private void drawPicture(DrawContext context, Identifier textureID, int renderSize, int x, int y, HudAnchor dir, int rotationAngle)
     {
         if (dir == null)
             return;
@@ -240,100 +234,73 @@ public class MainRenderer
 
         switch (dir) {
             case TOP_CENTER:
-                x1 = screenWidth / 2 - size / 2 + x;
+                x1 = screenWidth / 2 - renderSize / 2 + x;
                 break;
             case TOP_RIGHT:
-                x1 = screenWidth - size - x;
+                x1 = screenWidth - renderSize - x;
                 break;
             case LEFT:
-                y1 = screenHeight / 2 - size / 2 + y;
+                y1 = screenHeight / 2 - renderSize / 2 + y;
                 break;
             case CENTER:
-                x1 = screenWidth / 2 - size / 2 + x;
-                y1 = screenHeight / 2 - size / 2 + y;
+                x1 = screenWidth / 2 - renderSize / 2 + x;
+                y1 = screenHeight / 2 - renderSize / 2 + y;
                 break;
             case RIGHT:
-                x1 = screenWidth - size - x;
-                y1 = screenHeight / 2 - size / 2 + y;
+                x1 = screenWidth - renderSize - x;
+                y1 = screenHeight / 2 - renderSize / 2 + y;
                 break;
             case BOTTOM_LEFT:
-                y1 = screenHeight - size - y;
+                y1 = screenHeight - renderSize - y;
                 break;
             case BOTTOM_CENTER:
-                x1 = screenWidth / 2 - size / 2 + x;
-                y1 = screenHeight - size - y;
+                x1 = screenWidth / 2 - renderSize / 2 + x;
+                y1 = screenHeight - renderSize - y;
                 break;
             case BOTTOM_RIGHT:
-                x1 = screenWidth - size - x;
-                y1 = screenHeight - size - y;
+                x1 = screenWidth - renderSize - x;
+                y1 = screenHeight - renderSize - y;
                 break;
         }
 
         var texture = AllMusic.instance().webTextureManager.getTexture(textureID);
         if (!(texture instanceof NativeImageBackedTexture nativeImageBackedTexture) || nativeImageBackedTexture.getImage() == null)
         {
-            context.fill(x1, y1, x1 + size, y1 + size, placeholderColor);
+            context.fill(x1, y1, x1 + renderSize, y1 + renderSize, placeholderColor);
             return;
         }
 
         var image = nativeImageBackedTexture.getImage();
+        var imageWidth = image.getWidth();
+        var imageHeight = image.getHeight();
 
         var matrices = context.getMatrices();
 
         matrices.push();
 
-        float scaleFactor = size / (float)image.getHeight();
+        // 初步位移
+        // 但是不知道是从哪移到哪
+        int centerOffset = renderSize / 2;
+        matrices.translate(x + centerOffset, y + centerOffset, 0);
+
+        // 应用宣传
+        if (rotationAngle > 0)
+            matrices.multiply(new Quaternionf().fromAxisAngleDeg(0, 0, 1, rotationAngle));
+
+        // 缩放到我们想要的渲染大小
+        float scaleFactor = renderSize / (float)imageHeight;
         matrices.scale(scaleFactor, scaleFactor, scaleFactor);
 
-        drawPictureLegacy(texture.getGlId(), size, x1, y1, ang);
+        // 使图像居中
+        float offset = (float)-imageHeight / 2;
+        matrices.translate(offset, offset, 0);
 
-/*
         context.drawTexture(RenderLayer::getGuiTextured, textureID,
-                x1, y1,
-                0f, 0f,
-                image.getWidth(), image.getHeight(),
-                image.getWidth(), image.getHeight());
-*/
-        //drawPictureLegacy(texture.getGlId(), renderSize, x1, y1, ang);
+                0, 0, 0, 0,
+                imageWidth, imageHeight,
+                imageWidth, imageHeight
+        );
 
         matrices.pop();
-    }
-
-    // 叫他Legacy是因为我想实现一个不需要这样的，尽可能简单直白的东西
-    // 最主要是看不懂（划掉）看不顺眼这一堆奇怪的调用（
-    private void drawPictureLegacy(int textureID, int size, int x, int y, int ang)
-    {
-        RenderSystem.setShader(ShaderProgramKeys.POSITION_TEX);
-        RenderSystem.setShaderTexture(0, textureID);
-
-        MatrixStack stack = new MatrixStack();
-        Matrix4f matrix = stack.peek().getPositionMatrix();
-
-        int a = size / 2;
-
-        if (ang > 0) {
-            matrix = matrix.translationRotate(x + a, y + a, 0,
-                    new Quaternionf().fromAxisAngleDeg(0, 0, 1, ang));
-        } else {
-            matrix = matrix.translation(x + a, y + a, 0);
-        }
-
-        int x0 = -a;
-        int x1 = a;
-        int y0 = -a;
-        int y1 = a;
-        int z = 0;
-        int u0 = 0;
-        float u1 = 1;
-        float v0 = 0;
-        float v1 = 1;
-
-        BufferBuilder bufferBuilder = Tessellator.getInstance().begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE);
-        bufferBuilder.vertex(matrix, (float) x0, (float) y1, (float) z).texture(u0, v1);
-        bufferBuilder.vertex(matrix, (float) x1, (float) y1, (float) z).texture(u1, v1);
-        bufferBuilder.vertex(matrix, (float) x1, (float) y0, (float) z).texture(u1, v0);
-        bufferBuilder.vertex(matrix, (float) x0, (float) y0, (float) z).texture(u0, v0);
-
-        BufferRenderer.drawWithGlobalProgram(bufferBuilder.end());
     }
 }
