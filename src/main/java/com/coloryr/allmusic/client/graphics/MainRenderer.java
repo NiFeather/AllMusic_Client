@@ -48,6 +48,12 @@ public class MainRenderer
             return;
         }
 
+        if (!musicMetadata.pic.shadow)
+        {
+            renderAngle = 0;
+            return;
+        }
+
         if (count < musicMetadata.picRotateSpeed)
         {
             count++;
