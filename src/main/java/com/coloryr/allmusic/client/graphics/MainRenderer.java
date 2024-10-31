@@ -281,7 +281,7 @@ public class MainRenderer
         // 初步位移
         // 但是不知道是从哪移到哪
         int centerOffset = renderSize / 2;
-        matrices.translate(x + centerOffset, y + centerOffset, 0);
+        matrices.translate(x1 + centerOffset, y1 + centerOffset, 0);
 
         // 应用宣传
         if (rotationAngle > 0)
