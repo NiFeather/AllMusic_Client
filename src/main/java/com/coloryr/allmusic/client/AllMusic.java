@@ -102,7 +102,7 @@ public class AllMusic implements ModInitializer
         configurations = new Configurations(FabricLoader.getInstance().getConfigDir());
         player = new APlayer();
 
-        ClientTickEvents.START_CLIENT_TICK.register(this::tick);
+        ClientTickEvents.END_CLIENT_TICK.register(this::tick);
         ClientPlayConnectionEvents.DISCONNECT.register(this::onDisconnect);
     }
 }

@@ -36,6 +36,7 @@ public class ServerHandler
                     case list -> renderer.listDisplay = payload.data();
                     case play ->
                     {
+                        //log.info("PLAY! %s".formatted(payload.data()));
                         var soundManager = MinecraftClient.getInstance().getSoundManager();
                         soundManager.stopSounds(null, SoundCategory.MUSIC);
                         soundManager.stopSounds(null, SoundCategory.RECORDS);
@@ -60,6 +61,7 @@ public class ServerHandler
                     }
                     case pos ->
                     {
+                        //log.info("Seek! " + payload.data1());
                         allMusic.player.set(payload.data1());
                     }
                     case hud ->
