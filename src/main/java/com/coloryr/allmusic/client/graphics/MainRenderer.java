@@ -10,7 +10,11 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.*;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.TextColor;
+import net.minecraft.util.ColorCode;
+import net.minecraft.util.Colors;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.ColorHelper;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -221,6 +225,8 @@ public class MainRenderer
         context.drawText(MinecraftClient.getInstance().textRenderer, text, x1, y1, color, shadow);
     }
 
+    private final int placeholderColor = ColorHelper.withAlpha(128, TextColor.parse("#333333").getOrThrow().getRgb());
+
     private void drawPicture(DrawContext context, Identifier textureID, int size, int x, int y, HudAnchor dir, int ang)
     {
         if (dir == null)
@@ -265,7 +271,10 @@ public class MainRenderer
 
         var texture = AllMusic.instance().webTextureManager.getTexture(textureID);
         if (!(texture instanceof NativeImageBackedTexture nativeImageBackedTexture) || nativeImageBackedTexture.getImage() == null)
+        {
+            context.fill(x1, y1, x1 + size, y1 + size, placeholderColor);
             return;
+        }
 
         var image = nativeImageBackedTexture.getImage();
 
