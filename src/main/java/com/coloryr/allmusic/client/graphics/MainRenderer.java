@@ -96,6 +96,11 @@ public class MainRenderer
 
     public void setCurrentTexture(Identifier newTexture, Identifier newTextureRounded)
     {
+        var textureManager = AllMusic.instance().webTextureManager;
+
+        textureManager.destroy(currentTexture);
+        textureManager.destroy(textureRounded);
+
         this.currentTexture = newTexture;
         this.textureRounded = newTextureRounded;
     }

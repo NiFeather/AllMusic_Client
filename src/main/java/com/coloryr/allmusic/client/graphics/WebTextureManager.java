@@ -51,6 +51,13 @@ public class WebTextureManager
         return MinecraftClient.getInstance().getTextureManager().getOrDefault(textureIdentifier, null);
     }
 
+    public void destroy(@Nullable Identifier textureIdentifier)
+    {
+        if (textureIdentifier == null) return;
+
+        MinecraftClient.getInstance().getTextureManager().destroyTexture(textureIdentifier);
+    }
+
     private final Map<Identifier, CompletableFuture<Boolean>> onGoingRequests = new ConcurrentHashMap<>();
 
     /**
