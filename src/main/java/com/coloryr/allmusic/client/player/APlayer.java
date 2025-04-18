@@ -44,7 +44,7 @@ public class APlayer extends InputStream {
     private IDecoder decoder;
     private int time = 0;
     private long local = 0;
-    private boolean isPlay = false;
+    private boolean playing = false;
     private boolean wait = false;
     private int alSourceName;
     private int frequency;
@@ -62,23 +62,21 @@ public class APlayer extends InputStream {
                     .build();
 
             ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
-            service.scheduleAtFixedRate(this::run1, 0, 10, TimeUnit.MILLISECONDS);
+            service.scheduleAtFixedRate(this::timerLoop, 0, 10, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void run1()
+    public void timerLoop()
     {
-        if (isPlay)
-        {
+        if (playing)
             time += 10;
-        }
     }
 
-    public boolean isPlay()
+    public boolean playing()
     {
-        return isPlay;
+        return playing;
     }
 
     public String Get(String url)
@@ -176,7 +174,7 @@ public class APlayer extends InputStream {
 
                 MinecraftClient.getInstance().player.sendMessage(Text.literal("Decoder is " + decoder), false);
 
-                isPlay = true;
+                playing = true;
 
                 alSourceName = AL10.alGenSources();
                 int m_numqueued = AL10.alGetSourcei(alSourceName, AL10.AL_BUFFERS_QUEUED);
@@ -259,7 +257,7 @@ public class APlayer extends InputStream {
                             continue;
                         }
                     }
-                    isPlay = false;
+                    playing = false;
                     AL10.alSourceStop(alSourceName);
                     m_numqueued = AL10.alGetSourcei(alSourceName, AL10.AL_BUFFERS_QUEUED);
                     while (m_numqueued > 0) {
@@ -404,7 +402,7 @@ public class APlayer extends InputStream {
     }
 
     public void setReload() {
-        if (isPlay) {
+        if (playing) {
             reload = true;
             isClose = true;
         }

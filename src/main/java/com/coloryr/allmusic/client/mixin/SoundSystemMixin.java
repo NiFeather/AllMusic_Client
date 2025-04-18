@@ -17,7 +17,7 @@ public class SoundSystemMixin
     {
         AllMusic.runIfInstancePresent(am ->
         {
-            if (!am.player.isPlay()) return;
+            if (!am.player.playing()) return;
 
             SoundCategory data = soundInstance.getCategory();
             switch (data)
