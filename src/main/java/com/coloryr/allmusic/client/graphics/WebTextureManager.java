@@ -48,7 +48,7 @@ public class WebTextureManager
     @Nullable
     public AbstractTexture getTexture(Identifier textureIdentifier)
     {
-        return MinecraftClient.getInstance().getTextureManager().getOrDefault(textureIdentifier, null);
+        return MinecraftClient.getInstance().getTextureManager().getTexture(textureIdentifier);
     }
 
     public void destroy(@Nullable Identifier textureIdentifier)
@@ -85,8 +85,8 @@ public class WebTextureManager
 
                 registerImage(targetIdentifier, bufferedImage);
 
-                bufferedImage = Utils.makePictureRounded(bufferedImage.getWidth(), bufferedImage.getHeight(), bufferedImage);
-                registerImage(targetIdentifier.withSuffixedPath("_rounded"), bufferedImage);
+                var bufferedImageRounded = Utils.makePictureRounded(bufferedImage.getWidth(), bufferedImage.getHeight(), bufferedImage);
+                registerImage(targetIdentifier.withSuffixedPath("_rounded"), bufferedImageRounded);
 
                 this.loadedTextures.add(targetIdentifier);
             }
