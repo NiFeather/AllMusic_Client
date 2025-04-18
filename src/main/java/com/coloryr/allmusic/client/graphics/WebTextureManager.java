@@ -1,7 +1,7 @@
 package com.coloryr.allmusic.client.graphics;
 
-import com.coloryr.allmusic.client.AllMusic;
 import com.coloryr.allmusic.client.utils.Utils;
+import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.AbstractTexture;
@@ -21,7 +21,6 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,8 +36,6 @@ public class WebTextureManager
                 .useSystemProperties()
                 .build();
     }
-
-    private final List<Identifier> loadedTextures = new ObjectArrayList<>();
 
     /**
      * 从TextureManager获取材质
@@ -63,7 +60,7 @@ public class WebTextureManager
     /**
      * @return Whether success
      */
-    public CompletableFuture<Boolean> fetch(Identifier targetIdentifier, String url)
+    public CompletableFuture<Boolean> fetchTextureAsync(Identifier targetIdentifier, String url)
     {
         var ongoing = onGoingRequests.getOrDefault(targetIdentifier, null);
         if (ongoing != null) return ongoing;
@@ -87,8 +84,6 @@ public class WebTextureManager
 
                 var bufferedImageRounded = Utils.makePictureRounded(bufferedImage.getWidth(), bufferedImage.getHeight(), bufferedImage);
                 registerImage(targetIdentifier.withSuffixedPath("_rounded"), bufferedImageRounded);
-
-                this.loadedTextures.add(targetIdentifier);
             }
             catch (Throwable t)
             {
@@ -127,7 +122,15 @@ public class WebTextureManager
             return;
         }
 
-        var texture = new NativeImageBackedTexture(image);
-        MinecraftClient.getInstance().getTextureManager().registerTexture(targetIdentifier, texture);
+        Runnable registerRunnable = () ->
+        {
+            var texture = new NativeImageBackedTexture(() -> "am_native_image_%s".formatted(targetIdentifier.toString()), image);
+            MinecraftClient.getInstance().getTextureManager().registerTexture(targetIdentifier, texture);
+        };
+
+        if (RenderSystem.isOnRenderThread())
+            registerRunnable.run();
+        else
+            CompletableFuture.runAsync(registerRunnable, MinecraftClient.getInstance()).join();
     }
 }
