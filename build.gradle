@@ -17,7 +17,7 @@ version = getVersionFromFile()
 group = project.maven_group
 
 base {
-	archivesName = project.archives_base_name
+	archivesName = "allmusic-forked-%s-fabric".formatted(minecraft_version)
 }
 
 repositories {
@@ -71,7 +71,7 @@ jar {
 publishing {
 	publications {
 		create("mavenJava", MavenPublication) {
-			artifactId = project.archives_base_name
+			artifactId = base.archivesName
 			from components.java
 		}
 	}

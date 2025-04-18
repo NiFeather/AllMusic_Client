@@ -10,6 +10,7 @@ import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.slf4j.Logger;
@@ -21,14 +22,14 @@ import java.util.concurrent.TimeUnit;
 
 public class MainRenderer
 {
-    private static final Logger log = LoggerFactory.getLogger(MainRenderer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MainRenderer.class);
 
-    private final ScheduledExecutorService executor;
+    private final ScheduledExecutorService timerExecutor;
 
     public MainRenderer()
     {
-        this.executor = Executors.newSingleThreadScheduledExecutor();
-        executor.scheduleAtFixedRate(this::timer, 0, 1, TimeUnit.MILLISECONDS);
+        this.timerExecutor = Executors.newSingleThreadScheduledExecutor();
+        timerExecutor.scheduleAtFixedRate(this::timer, 0, 1, TimeUnit.MILLISECONDS);
     }
 
     //region Timer
@@ -92,7 +93,7 @@ public class MainRenderer
     @Nullable
     private Identifier textureRounded;
 
-    public void setCurrentTexture(Identifier newTexture, Identifier newTextureRounded)
+    public void setCurrentTexture(@Nullable Identifier newTexture, @Nullable Identifier newTextureRounded)
     {
         var textureManager = AllMusic.instance().webTextureManager;
 
@@ -162,7 +163,9 @@ public class MainRenderer
         {
             // pic.shadow 是是否旋转； pic.color 是封面大小
             var identifier = musicMeta.pic.shadow ? textureRounded : currentTexture;
-            drawPicture(context, identifier , musicMeta.pic.color, musicMeta.pic.x, musicMeta.pic.y, musicMeta.pic.dir, renderAngle);
+
+            if (identifier != null)
+                drawPicture(context, identifier , musicMeta.pic.color, musicMeta.pic.x, musicMeta.pic.y, musicMeta.pic.dir, renderAngle);
         }
     }
 
@@ -221,7 +224,7 @@ public class MainRenderer
 
     private final int placeholderColor = ColorHelper.withAlpha(128, TextColor.parse("#333333").getOrThrow().getRgb());
 
-    private void drawPicture(DrawContext context, Identifier textureID, int renderSize, int x, int y, HudAnchor dir, int rotationAngle)
+    private void drawPicture(DrawContext context, @NotNull Identifier textureID, int renderSize, int x, int y, HudAnchor dir, int rotationAngle)
     {
         if (dir == null)
             return;

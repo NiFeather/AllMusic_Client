@@ -49,8 +49,13 @@ public class ServerHandler
                         var url = payload.data();
                         var identifier = Utils.nameIdentifierFrom(url);
 
-                        allMusic.webTextureManager.fetchTextureAsync(identifier, url);
-                        allMusic.mainRenderer.setCurrentTexture(identifier, identifier.withSuffixedPath("_rounded"));
+                        allMusic.mainRenderer.setCurrentTexture(null, null);
+                        allMusic.webTextureManager.fetchTextureAsync(identifier, url)
+                                .thenAccept(success ->
+                                {
+                                    if (success)
+                                        allMusic.mainRenderer.setCurrentTexture(identifier, identifier.withSuffixedPath("_rounded"));
+                                });
                     }
                     case stop -> allMusic.stopPlaying();
                     case clear ->

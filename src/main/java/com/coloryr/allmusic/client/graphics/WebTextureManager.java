@@ -2,7 +2,6 @@ package com.coloryr.allmusic.client.graphics;
 
 import com.coloryr.allmusic.client.utils.Utils;
 import com.mojang.blaze3d.systems.RenderSystem;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.AbstractTexture;
 import net.minecraft.client.texture.NativeImage;
@@ -13,6 +12,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,10 +24,11 @@ import java.io.ByteArrayOutputStream;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 public class WebTextureManager
 {
-    private static final Logger log = LoggerFactory.getLogger(WebTextureManager.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WebTextureManager.class);
     private final HttpClient client;
 
     public WebTextureManager()
@@ -37,22 +38,38 @@ public class WebTextureManager
                 .build();
     }
 
+    private void runOnRenderThread(Runnable runnable)
+    {
+        if (RenderSystem.isOnRenderThread())
+            runnable.run();
+        else
+            CompletableFuture.runAsync(runnable, MinecraftClient.getInstance()).join();
+    }
+
+    private <T> T runOnRenderThread(Supplier<T> supplier)
+    {
+        if (RenderSystem.isOnRenderThread())
+            return supplier.get();
+        else
+            return CompletableFuture.supplyAsync(supplier).join();
+    }
+
     /**
      * 从TextureManager获取材质
      * @param textureIdentifier
      * @return NULL if not found
      */
     @Nullable
-    public AbstractTexture getTexture(Identifier textureIdentifier)
+    public AbstractTexture getTexture(@NotNull Identifier textureIdentifier)
     {
-        return MinecraftClient.getInstance().getTextureManager().getTexture(textureIdentifier);
+        return runOnRenderThread(() -> MinecraftClient.getInstance().getTextureManager().getTexture(textureIdentifier));
     }
 
     public void destroy(@Nullable Identifier textureIdentifier)
     {
         if (textureIdentifier == null) return;
 
-        MinecraftClient.getInstance().getTextureManager().destroyTexture(textureIdentifier);
+        runOnRenderThread(() -> MinecraftClient.getInstance().getTextureManager().destroyTexture(textureIdentifier));
     }
 
     private final Map<Identifier, CompletableFuture<Boolean>> onGoingRequests = new ConcurrentHashMap<>();
@@ -87,7 +104,7 @@ public class WebTextureManager
             }
             catch (Throwable t)
             {
-                log.error("未能获取图片数据：" + t.getMessage());
+                LOGGER.error("未能获取图片数据：" + t.getMessage());
                 t.printStackTrace();
 
                 return false;
@@ -118,19 +135,14 @@ public class WebTextureManager
         }
         catch (Throwable t)
         {
-            log.error("未能注册材质：" + t.getMessage());
+            LOGGER.error("未能注册材质：" + t.getMessage());
             return;
         }
 
-        Runnable registerRunnable = () ->
+        runOnRenderThread(() ->
         {
             var texture = new NativeImageBackedTexture(() -> "am_native_image_%s".formatted(targetIdentifier.toString()), image);
             MinecraftClient.getInstance().getTextureManager().registerTexture(targetIdentifier, texture);
-        };
-
-        if (RenderSystem.isOnRenderThread())
-            registerRunnable.run();
-        else
-            CompletableFuture.runAsync(registerRunnable, MinecraftClient.getInstance()).join();
+        });
     }
 }
