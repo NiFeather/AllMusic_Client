@@ -35,10 +35,10 @@ public class APlayer extends InputStream {
     private final Queue<String> urls = new ConcurrentLinkedQueue<>();
     private final Semaphore semaphore = new Semaphore(0);
     private final Semaphore semaphore1 = new Semaphore(0);
-    private HttpClient client;
+    private HttpClient httpClient;
     private String url;
-    private HttpGet get;
-    private InputStream content;
+    private HttpGet getRequest;
+    private InputStream contentStream;
     private boolean isClose = false;
     private boolean reload = false;
     private IDecoder decoder;
@@ -57,7 +57,7 @@ public class APlayer extends InputStream {
     {
         try {
             new Thread(this::playerLoop, "AllMusic Player Loop Thread").start();
-            client = HttpClientBuilder.create()
+            httpClient = HttpClientBuilder.create()
                     .useSystemProperties()
                     .build();
 
@@ -79,7 +79,7 @@ public class APlayer extends InputStream {
         return playing;
     }
 
-    public String Get(String url)
+    public String fetchStreamUrl(String url)
     {
         if (url.contains("https://music.163.com/song/media/outer/url?id=")
                 || url.contains("http://music.163.com/song/media/outer/url?id="))
@@ -89,7 +89,7 @@ public class APlayer extends InputStream {
                 HttpGet get = new HttpGet(url);
                 get.setHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36 Edg/84.0.522.52");
                 get.setHeader("Host", "music.163.com");
-                HttpResponse response = client.execute(get);
+                HttpResponse response = httpClient.execute(get);
                 StatusLine line = response.getStatusLine();
                 if (line.getStatusCode() == 302)
                 {
@@ -129,23 +129,23 @@ public class APlayer extends InputStream {
     }
 
     public void connect() throws IOException {
-        getClose();
-        streamClose();
-        get = new HttpGet(url);
-        get.setHeader("Range", "bytes=" + local + "-");
-        HttpResponse response = this.client.execute(get);
+        closeRequest();
+        closeStream();
+        getRequest = new HttpGet(url);
+        getRequest.setHeader("Range", "bytes=" + local + "-");
+        HttpResponse response = this.httpClient.execute(getRequest);
         HttpEntity entity = response.getEntity();
-        content = entity.getContent();
+        contentStream = entity.getContent();
     }
 
     private void playerLoop() {
         while (true) {
             try {
                 semaphore.acquire();
-                url = urls.poll();
+                url = urls.poll(); // Poll music URL
                 if (url == null || url.isEmpty()) continue;
                 urls.clear();
-                url = Get(url);
+                url = fetchStreamUrl(url); // Poll stream URL
                 if (url == null) continue;
                 try {
                     local = 0;
@@ -238,9 +238,9 @@ public class APlayer extends InputStream {
                     }
                 }
 
-                getClose();
-                streamClose();
-                decodeClose();
+                closeRequest();
+                closeStream();
+                closeDecoder();
 
                 while (!isClose && AL10.alGetSourcei(alSourceName, AL10.AL_SOURCE_STATE) == AL10.AL_PLAYING)
                 {
@@ -341,21 +341,21 @@ public class APlayer extends InputStream {
         semaphore.release();
     }
 
-    private void getClose() {
-        if (get != null && !get.isAborted()) {
-            get.abort();
-            get = null;
+    private void closeRequest() {
+        if (getRequest != null && !getRequest.isAborted()) {
+            getRequest.abort();
+            getRequest = null;
         }
     }
 
-    private void streamClose() throws IOException {
-        if (content != null) {
-            content.close();
-            content = null;
+    private void closeStream() throws IOException {
+        if (contentStream != null) {
+            contentStream.close();
+            contentStream = null;
         }
     }
 
-    private void decodeClose() throws Exception {
+    private void closeDecoder() throws Exception {
         if (decoder != null) {
             decoder.close();
             decoder = null;
@@ -364,18 +364,18 @@ public class APlayer extends InputStream {
 
     @Override
     public int read() throws IOException {
-        return content.read();
+        return contentStream.read();
     }
 
     @Override
     public int read(byte[] buf) throws IOException {
-        return content.read(buf);
+        return contentStream.read(buf);
     }
 
     @Override
     public synchronized int read(byte[] buf, int off, int len) throws IOException {
         try {
-            int temp = content.read(buf, off, len);
+            int temp = contentStream.read(buf, off, len);
             local += temp;
             return temp;
         } catch (ConnectionClosedException | SocketException ex) {
@@ -386,17 +386,17 @@ public class APlayer extends InputStream {
 
     @Override
     public synchronized int available() throws IOException {
-        return content.available();
+        return contentStream.available();
     }
 
     @Override
     public void close() throws IOException {
-        streamClose();
+        closeStream();
     }
 
     public void setLocal(long local) throws IOException {
-        getClose();
-        streamClose();
+        closeRequest();
+        closeStream();
         this.local = local;
         connect();
     }
