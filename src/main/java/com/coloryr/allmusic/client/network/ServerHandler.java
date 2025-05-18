@@ -4,6 +4,7 @@ import com.coloryr.allmusic.client.AllMusic;
 import com.coloryr.allmusic.client.hud.MusicMeta;
 import com.coloryr.allmusic.client.utils.Utils;
 import com.google.gson.Gson;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.client.MinecraftClient;
@@ -80,6 +81,11 @@ public class ServerHandler
             {
                 e.printStackTrace();
             }
+        });
+
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
+        {
+            renderer.resetDisplay();
         });
     }
 }

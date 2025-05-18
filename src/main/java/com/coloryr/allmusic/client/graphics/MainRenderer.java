@@ -87,6 +87,15 @@ public class MainRenderer
     public String listDisplay = "";
     public String lyricDisplay = "";
 
+    public void resetDisplay()
+    {
+        infoDisplay = "";
+        listDisplay = "";
+        lyricDisplay = "";
+
+        musicMetadata = new MusicMeta();
+    }
+
     @Nullable
     private Identifier currentTexture;
 
