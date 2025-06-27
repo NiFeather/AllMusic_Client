@@ -11,6 +11,7 @@ import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
+import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix3x2f;
@@ -124,10 +125,12 @@ public class MainRenderer
     public void doRender(DrawContext context)
     {
         MusicMeta musicMeta = this.musicMetadata;
+
         if (musicMeta == null) return;
 
         if (musicMeta.info.enable && !infoDisplay.isEmpty())
         {
+            //LOGGER.info("Render info!");
             int offset = 0;
 
             String[] temp = infoDisplay.split("\n");
@@ -182,6 +185,9 @@ public class MainRenderer
 
     private void drawText(DrawContext context, String text, int x, int y, HudAnchor dir, int color, boolean shadow)
     {
+        if (color == 0)
+            color = 0xFFFFFFFF;
+
         int width = AllMusic.getTextWidth(text);
         int height = AllMusic.getFontHeight();
 
@@ -232,6 +238,8 @@ public class MainRenderer
 
         context.drawText(MinecraftClient.getInstance().textRenderer, text, x1, y1, color, shadow);
     }
+
+    private static final float magicNumber = MathHelper.PI / 180;
 
     private final int placeholderColor = ColorHelper.withAlpha(128, TextColor.parse("#333333").getOrThrow().getRgb());
 
@@ -299,7 +307,7 @@ public class MainRenderer
 
         // 应用宣传
         if (rotationAngle > 0)
-            matrices.rotate(rotationAngle);
+            matrices.rotate(magicNumber * rotationAngle);
 
         // 缩放到我们想要的渲染大小
         float scaleFactor = renderSize / (float)imageHeight;

@@ -14,8 +14,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(SoundSystem.class)
 public abstract class SoundSystemMixin
 {
-    @Shadow public abstract void stop(SoundInstance sound);
-
     @Inject(method = "play(Lnet/minecraft/client/sound/SoundInstance;)Lnet/minecraft/client/sound/SoundSystem$PlayResult;", at = @At("HEAD"), cancellable = true)
     public void allmusic$onPlay(SoundInstance soundInstance, CallbackInfoReturnable<SoundSystem.PlayResult> cir)
     {
@@ -24,13 +22,8 @@ public abstract class SoundSystemMixin
             if (!am.player.playing()) return;
 
             SoundCategory data = soundInstance.getCategory();
-            switch (data)
-            {
-                case RECORDS, MUSIC ->
-                {
-                    cir.setReturnValue(SoundSystem.PlayResult.NOT_STARTED);
-                }
-            }
+            if (data == SoundCategory.RECORDS || data == SoundCategory.MUSIC)
+                cir.setReturnValue(SoundSystem.PlayResult.NOT_STARTED);
         });
     }
 
