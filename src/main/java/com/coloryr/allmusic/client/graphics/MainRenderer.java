@@ -4,6 +4,7 @@ import com.coloryr.allmusic.client.AllMusic;
 import com.coloryr.allmusic.client.hud.HudAnchor;
 import com.coloryr.allmusic.client.hud.MusicMeta;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.*;
 import net.minecraft.client.texture.NativeImageBackedTexture;
@@ -12,6 +13,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix3x2f;
 import org.joml.Quaternionf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -288,31 +290,31 @@ public class MainRenderer
 
         var matrices = context.getMatrices();
 
-        matrices.push();
+        matrices.pushMatrix();
 
         // 初步位移
         // 但是不知道是从哪移到哪
         int centerOffset = renderSize / 2;
-        matrices.translate(x1 + centerOffset, y1 + centerOffset, 0);
+        matrices.translate(x1 + centerOffset, y1 + centerOffset);
 
         // 应用宣传
         if (rotationAngle > 0)
-            matrices.multiply(new Quaternionf().fromAxisAngleDeg(0, 0, 1, rotationAngle));
+            matrices.rotate(rotationAngle);
 
         // 缩放到我们想要的渲染大小
         float scaleFactor = renderSize / (float)imageHeight;
-        matrices.scale(scaleFactor, scaleFactor, scaleFactor);
+        matrices.scale(scaleFactor, scaleFactor);
 
         // 使图像居中
         float offset = (float)-imageHeight / 2;
-        matrices.translate(offset, offset, 0);
+        matrices.translate(offset, offset);
 
-        context.drawTexture(RenderLayer::getGuiTextured, textureID,
+        context.drawTexture(RenderPipelines.GUI_TEXTURED, textureID,
                 0, 0, 0, 0,
                 imageWidth, imageHeight,
                 imageWidth, imageHeight
         );
 
-        matrices.pop();
+        matrices.popMatrix();
     }
 }
